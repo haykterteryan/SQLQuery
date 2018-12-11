@@ -27,17 +27,13 @@ public class DbHelper {
     }
 
     static int createUser(String firstName, String lastName) {
-        String sql = "insert into users " +
-                "(first_name, last_name)" +
-                " values (" +
-                "'" + firstName + "'" +
-                ", " +
-                "'" + lastName + "'" +
-                ")";
+        String sql = "insert into users (first_name, last_name) values (?,?)";
 
         try {
-            Statement statement = connection.createStatement();
-            statement.execute(sql);
+            PreparedStatement preparedStatement = connection.prepareStatement(sql);
+            preparedStatement.setString(1,firstName);
+            preparedStatement.setString(2,lastName);
+            preparedStatement.executeUpdate();
 
             String idSql = "select max(id) from users";
             Statement idStatement = connection.createStatement();
@@ -59,20 +55,23 @@ public class DbHelper {
      * @param userId id of the user in users table
      * @param amount double value of the amount to insert
      */
-    static void cashFlow(int userId, double amount) {
-        String sql = "UPDATE users SET balance = balance+"+
-                "'"+amount+"'"+
-                " where id ="+
-                "'"+ userId + "'";
-        try{
-            Statement statement = connection.createStatement();
-            statement.execute(sql);
+    static void cashFlow(int userId, double amount) throws SQLException {
 
-        }catch(SQLException e){
-            e.printStackTrace();
+        if(check(userId, -amount)) {
+            String sql = "UPDATE users SET balance = balance+? where id =?";
+            PreparedStatement preparedStatement =
+                    connection.prepareStatement(sql);
+
+            preparedStatement.setDouble(1, amount);
+            preparedStatement.setInt(2, userId);
+
+            preparedStatement.executeUpdate();
+            System.out.println("Cash transfer successful");
+        }else
+            {
+                System.out.println("User not found or transfer amount is invalid");
+
         }
-
-
     }
 
     /**
@@ -84,9 +83,61 @@ public class DbHelper {
      * @param amount   transaction amount
      */
     static void transaction(int userFrom, int userTo, double amount) {
-        cashFlow(userFrom,-amount);
-        cashFlow(userTo,amount);
+        try {
+            connection.setAutoCommit(false);
 
+            if(!check(userFrom, amount)) throw new SQLException("Invalid User ID");
+
+            String query1 = "UPDATE users SET balance = balance-? where id =?";
+            PreparedStatement preparedStatement1 =
+                    connection.prepareStatement(query1);
+
+            preparedStatement1.setDouble(1, amount);
+            preparedStatement1.setInt(2, userFrom);
+
+            preparedStatement1.executeUpdate();
+
+            if(!check(userTo,0)) throw new SQLException("Invalid User ID");
+
+            String query2 = "UPDATE users SET balance = balance+? where id =?";
+            PreparedStatement preparedStatement2 =
+                    connection.prepareStatement(query2);
+
+            preparedStatement2.setDouble(1, amount);
+            preparedStatement2.setInt(2, userTo);
+
+            preparedStatement2.executeUpdate();
+            connection.commit();
+            System.out.println("Transaction successful");
+        }
+        catch (SQLException  e){
+            try {
+                System.out.println("Transaction Faild:Incorect User id or balance");
+                connection.rollback();
+            } catch ( SQLException e1 ) {
+                e1.printStackTrace();
+            }
+        }
+
+
+    }
+
+
+
+    private static boolean check(int userid,double amount) throws SQLException {
+        String query = "Select balance from users where id =?";
+
+        PreparedStatement preparedstaement = connection.prepareStatement(query);
+        preparedstaement.setInt(1,userid);
+        preparedstaement.execute();
+
+        ResultSet result = preparedstaement.executeQuery();
+        if(result.next() && amount < result.getDouble("balance")) {
+            return true;
+        }
+        else{
+            return false;
+        }
     }
 
     static List<User> listUsers() {

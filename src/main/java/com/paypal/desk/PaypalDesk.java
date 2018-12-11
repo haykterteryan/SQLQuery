@@ -1,5 +1,6 @@
 package com.paypal.desk;
 
+import java.sql.SQLException;
 import java.text.MessageFormat;
 import java.util.List;
 import java.util.Scanner;
@@ -8,7 +9,7 @@ public class PaypalDesk {
 
     private static Scanner scanner = new Scanner(System.in);
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws SQLException {
 
         System.out.println("Welcome to paypal");
         System.out.println("Enter command");
@@ -79,22 +80,21 @@ public class PaypalDesk {
         }
     }
 
-    private static void cashIn() {
+    private static void cashIn() throws SQLException {
         int userId = getUserIdFromConsole("User id: ");
         double amount = getAmountFromConsole();
 
         DbHelper.cashFlow(userId, amount);
 
-        System.out.println("Cash in successful");
     }
 
-    private static void cashOut() {
+    private static void cashOut() throws SQLException {
         int userId = getUserIdFromConsole("User id: ");
         double amount = getAmountFromConsole();
 
         DbHelper.cashFlow(userId, -amount);
 
-        System.out.println("Cash out successful");
+
     }
 
     private static void transaction() {
@@ -107,11 +107,9 @@ public class PaypalDesk {
 
         double amount = getAmountFromConsole();
 
-        DbHelper.transaction(
-                userFrom, userTo, amount
-        );
+        DbHelper.transaction(userFrom, userTo, amount);
 
-        System.out.println("Transaction successful");
+
     }
 
 
