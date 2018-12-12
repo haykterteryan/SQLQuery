@@ -2,7 +2,9 @@ package com.paypal.desk;
 
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
+
 import java.sql.*;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -97,7 +99,7 @@ public class DbHelper {
 
             preparedStatement1.executeUpdate();
 
-            if(!check(userTo,0)) throw new SQLException("Invalid User ID");
+            if(!check(userTo,-1)) throw new SQLException("Invalid User ID");
 
             String query2 = "UPDATE users SET balance = balance+? where id =?";
             PreparedStatement preparedStatement2 =
@@ -107,8 +109,10 @@ public class DbHelper {
             preparedStatement2.setInt(2, userTo);
 
             preparedStatement2.executeUpdate();
+
+            addTransaction(userFrom,userTo, amount);
             connection.commit();
-            System.out.println("Transaction successful");
+            System.out.println("Transaction successfull");
         }
         catch (SQLException  e){
             try {
@@ -122,6 +126,16 @@ public class DbHelper {
 
     }
 
+    private static void addTransaction(int userFrom, int userTo, double amount) throws SQLException {
+        String query = "INSERT INTO transactions (user_from, user_to, transaction_amount) values (?,?,?)";
+        PreparedStatement preparedStatement = connection.prepareStatement(query);
+        preparedStatement.setInt(1, userFrom);
+        preparedStatement.setInt(2, userTo);
+        preparedStatement.setDouble(3, amount);
+
+        preparedStatement.execute();
+
+    }
 
 
     private static boolean check(int userid,double amount) throws SQLException {
@@ -162,6 +176,32 @@ public class DbHelper {
             }
             return userList;
         } catch (SQLException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    static List<Transaction> listTransactions() {
+        String query = "Select * from transactions";
+        try {
+            PreparedStatement preparedStatement = connection.prepareStatement(query);
+            ResultSet resultSet = preparedStatement.executeQuery(query);
+
+            List<Transaction> transactionsList = new ArrayList<>();
+
+            while (resultSet.next()) {
+                int id = resultSet.getInt("id");
+                int userFrom = resultSet.getInt("user_from");
+                int userTo = resultSet.getInt("user_to");
+                double transactionAmount = resultSet.getDouble("transaction_amount");
+                Date transactionDate = resultSet.getDate("transaction_date");
+
+                transactionsList.add(new Transaction(id, userFrom, userTo, transactionAmount, transactionDate));
+            }
+
+            return transactionsList;
+
+        } catch ( SQLException e ) {
             e.printStackTrace();
             return null;
         }

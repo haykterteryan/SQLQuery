@@ -17,6 +17,7 @@ public class PaypalDesk {
         while (true) {
             System.out.println("(C) -> Create user");
             System.out.println("(L) -> List users");
+            System.out.println("(O) -> List transactions");
             System.out.println("(+) -> Cash in");
             System.out.println("(-) -> Cash out");
             System.out.println("(T) -> Transaction");
@@ -30,6 +31,9 @@ public class PaypalDesk {
                     break;
                 case "L":
                     listUsers();
+                    break;
+                case"O":
+                    listTaransactions();
                     break;
                 case "+":
                     cashIn();
@@ -68,6 +72,15 @@ public class PaypalDesk {
             System.out.println(
                     "Error while creating the user"
             );
+        }
+    }
+
+    private static void listTaransactions() {
+        List<Transaction> transactions = DbHelper.listTransactions();
+        if (transactions == null) return;
+
+        for (Transaction transaction : transactions) {
+            System.out.println(transaction);
         }
     }
 
